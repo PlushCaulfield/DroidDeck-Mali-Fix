@@ -464,9 +464,17 @@ static int do_connect(vkb_conn *c)
         if (fgets(comm, sizeof(comm), f)) comm[strcspn(comm, "\n")] = 0;
         fclose(f);
     }
-    char key[64], hello[160];
+    char key[64], hello[700];
     pcache_key(comm, key, sizeof(key));
-    snprintf(hello, sizeof(hello), "%s%s%s", comm, key[0] ? "@" : "", key);
+    int hn = snprintf(hello, sizeof(hello), "%s%s%s", comm, key[0] ? "@" : "", key);
+    /* VKBRIDGE_SRV="KEY=VALUE KEY=VALUE": per-game server switches set from a game's launch options
+     * (the server only reads its own environment and <cache dir>/env, which the app's cache
+     * directory keeps out of a phone user's reach). Sent after a 0x1f byte in the hello name, so a
+     * server without the convention just sees a longer name; the server takes only the per-game
+     * keys of server_presets.c and logs what it took. */
+    const char *srv = getenv("VKBRIDGE_SRV");
+    if (srv && *srv && hn > 0 && (size_t)hn < sizeof(hello) - 3)
+        snprintf(hello + hn, sizeof(hello) - (size_t)hn, "\x1f%s", srv);
     vkb_enc_str(&e, hello);
     vkb_msg_hdr h = {VKB_MAGIC, (uint32_t)e.len, VKB_CMD_vkbHello, 0, 0, 0, 0, 0};
     int ok = vkb_send_msg(s, &h, e.buf, NULL, 0) == 0;
