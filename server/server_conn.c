@@ -1375,11 +1375,17 @@ void vkb_sv_vkbHello(vkb_srv_call *c)
         if (c->conn->proc->conns == 1) {
             VKB_INFO("process %u is %s", pid, comm ? comm : "?");
             if (comm) {
-                /* "name@key": the key picks the persistent pipeline cache (client/conn.c pcache_key) */
-                const char *at = strrchr(comm, '@');
+                /* "name@key": the key picks the persistent pipeline cache (client/conn.c pcache_key);
+                 * after a 0x1f byte the client's launch-option switches (VKBRIDGE_SRV) */
                 vkb_srv_proc *pr = c->conn->proc;
-                snprintf(pr->comm, sizeof(pr->comm), "%.*s", at ? (int)(at - comm) : (int)strlen(comm), comm);
-                if (at && at[1]) snprintf(pr->pkey, sizeof(pr->pkey), "%s", at + 1);
+                const char *us = strchr(comm, '\x1f');
+                size_t clen = us ? (size_t)(us - comm) : strlen(comm);
+                if (us && us[1]) snprintf(pr->launch, sizeof(pr->launch), "%s", us + 1);
+                const char *at = NULL;
+                for (const char *q = comm; q < comm + clen; q++)
+                    if (*q == '@') at = q;
+                snprintf(pr->comm, sizeof(pr->comm), "%.*s", at ? (int)(at - comm) : (int)clen, comm);
+                if (at && at + 1 < comm + clen) snprintf(pr->pkey, sizeof(pr->pkey), "%.*s", (int)(comm + clen - at - 1), at + 1);
             }
             vkb_preset_load(c->conn->proc); /* the app id is known: its preset, before its first request */
             vkb_report_hello(c->conn->proc);

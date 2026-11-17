@@ -30,6 +30,7 @@ typedef struct vkb_srv_proc {
     int conns;
     char comm[32];                 /* the client's process name (per-program pipeline caches) */
     char pkey[48];                 /* the client's pipeline cache key ("name@key" in the hello), or "" */
+    char launch[512];              /* the client's VKBRIDGE_SRV (launch options): KEY=VALUE words after 0x1f in the hello, or "" */
     struct vkb_preset *preset;     /* server_presets.c: the game's preset (by Steam app id), or NULL */
     struct vkb_srv_proc *next;
     /* Ordering of the process's asynchronous requests (vkb_msg_hdr.seq/barrier). */

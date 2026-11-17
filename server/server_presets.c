@@ -311,6 +311,15 @@ void vkb_preset_load(vkb_srv_proc *pr)
     snprintf(p->appid, sizeof(p->appid), "%s", id);
     load_builtin(p);
     load_file(p);
+    if (pr->launch[0]) {
+        /* the game's own launch options (VKBRIDGE_SRV): the most specific choice, beats the file */
+        char where[64];
+        snprintf(where, sizeof(where), "launch options of steam%s", p->appid);
+        take_words(p, pr->launch, VKB_ENV_SRC_PRESET_FILE, where);
+        char one[600];
+        snprintf(one, sizeof(one), "launch options of steam%s (VKBRIDGE_SRV): %s", p->appid, pr->launch);
+        if (first_time(one)) VKB_INFO("%s", one);
+    }
     if (p->untested[0]) {
         char gpu[300];
         gpu_names(gpu, sizeof(gpu));
